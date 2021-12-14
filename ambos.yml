@@ -4,23 +4,20 @@
   gather_facts: no
 
   tasks:
-  - name: Grupo MK
+  - name: FireMK
     routeros_command:
        commands:
-         - /ip firewall filter add chain=forward action=accept
-         - /ip firewall filter add action=accept chain=input protocol=icmp comm>
-         - /ip firewall filter add action=accept chain=output protocol=icmp com>
+         - /ip firewall filter add action=accept chain=input protocol=icmp comment="ICMP In"
+         - /ip firewall filter add action=accept chain=output protocol=icmp comment="ICMP Out"
+         - /ip firewall filter add action=accept chain=forward protocol=icmp comment="ICMP Forward"
 
 - hosts: IPtables
-  become: true
-  become_user: root
+  
   vars:
       host_name: localhost
- 
- 
+  
   tasks:
           # ------- filter rules -------
-
   - name: change default chain policy (used to clean rules)
     ansible.builtin.iptables:
       chain: INPUT
@@ -33,42 +30,26 @@
       jump: DROP
     become: yes
 
-
   - name: Accept INPUT
     ansible.builtin.iptables:
       chain: INPUT
-      source: 192.168.1.1
+      source: 192.168.8.1
       jump: ACCEPT
     become: yes
 
   - name: Accept OUTPUT
     ansible.builtin.iptables:
       chain: OUTPUT
-      destination: 192.168.1.1
+      destination: 192.168.8.1
       jump: ACCEPT
     become: yes
-
+ 
   - name: Allow new incoming SYN packets on TCP port 22 (SSH)
-      ansible.builtin.iptables:
-        chain: INPUT
-        protocol: tcp
-        destination_port: 22
-        ctstate: NEW
-        syn: match
-        jump: ACCEPT
-        comment: Accept new SSH connections.
-
-
-
-
-  - name: Drop INPUT
     ansible.builtin.iptables:
       chain: INPUT
-      policy: DROP
-    become: yes
-
-  - name: Accept INPUT
-    ansible.builtin.iptables:
-      chain: OUTPUT
-      policy: DROP
-    become: yes
+      protocol: tcp
+      destination_port: 22
+      ctstate: NEW
+      syn: match
+      jump: ACCEPT
+      comment: Accept new SSH connections.
